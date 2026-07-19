@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | Live production demo | [gpt-home-buying-agent.vercel.app](https://gpt-home-buying-agent.vercel.app) | Verified: HTTP 200 and live GPT-5.6 response |
 | Devpost project | [devpost.com/software/gpt-home-buying-agent](https://devpost.com/software/gpt-home-buying-agent) | Draft |
-| Source repository | **TODO: add the GitHub/GitLab/Bitbucket URL after creating and pushing the repository** | Required before submission |
+| Source repository | [github.com/zhen-shen-md/gpt-home-buying-agent](https://github.com/zhen-shen-md/gpt-home-buying-agent) | Verified public |
 | License | [MIT](./LICENSE) | Ready |
 | Demo video | **TODO: add the public YouTube URL** | Required before submission |
 | Codex `/feedback` Session ID | `019f7bdd-a64f-7532-a7cd-06e61ce36d46` | Ready |
@@ -63,7 +63,7 @@ No account or login is required.
 - [x] Two submission screenshots
 - [x] Testing instructions
 - [x] MIT license
-- [ ] Public or judge-accessible source repository URL
+- [x] Public or judge-accessible source repository URL
 - [ ] Public YouTube demo video under three minutes with audio
 - [x] Codex `/feedback` Session ID
 - [ ] Replace the Devpost description's unimplemented side-by-side-comparison claim

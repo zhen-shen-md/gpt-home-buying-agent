@@ -4,7 +4,7 @@ An OpenAI Build Week MVP that turns conversational home preferences into transpa
 
 Built with GPT-5.6, Codex, Next.js, React, TypeScript, Zod, and Vitest.
 
-[Live demo](https://gpt-home-buying-agent.vercel.app) · [Judge testing guide](./SUBMISSION.md) · [Devpost project](https://devpost.com/software/gpt-home-buying-agent)
+[Live demo](https://gpt-home-buying-agent.vercel.app) · [Source repository](https://github.com/zhen-shen-md/gpt-home-buying-agent) · [Judge testing guide](./SUBMISSION.md) · [Devpost project](https://devpost.com/software/gpt-home-buying-agent)
 
 ## Screenshots
 
