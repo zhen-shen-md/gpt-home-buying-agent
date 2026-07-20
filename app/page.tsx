@@ -3,11 +3,11 @@
 import { FormEvent, useState } from "react";
 import { ShortlistMap } from "@/components/ShortlistMap";
 import { listings } from "@/data/listings";
-import { priorityKeys, type MatchResponse, type PriorityKey } from "@/lib/domain";
+import { priorityKeys, type MatchResponse, type PriorityKey, type PriorityWeights } from "@/lib/domain";
 import { rankListings } from "@/lib/rank";
 
 const starter =
-  "I want a bright 3-bedroom in 20878 under $800k. Keep my commute to DC under 1 hour. Pretty community and convenient to groceries and restaurants.";
+  "I want a bright 3-bedroom in 20878 under $800k. Keep my commute to DC under 1 hour. Pretty community, convenient to groceries and restaurants, with easy access to schools.";
 
 const refinementStarter = "Commute matters less now, but outdoor space is required.";
 
@@ -19,7 +19,38 @@ const factorLabels: Record<PriorityKey, string> = {
   naturalLight: "Light",
   communityAppeal: "Community",
   convenience: "Convenience",
+  schoolAccess: "Schools",
 };
+
+const factorMarks: Record<PriorityKey, string> = {
+  affordability: "$",
+  commute: "→",
+  space: "□",
+  outdoorSpace: "✦",
+  naturalLight: "☀",
+  communityAppeal: "◆",
+  convenience: "◎",
+  schoolAccess: "A+",
+};
+
+const strategyPresets: { label: string; weights: PriorityWeights }[] = [
+  {
+    label: "Value first",
+    weights: { affordability: 100, commute: 25, space: 25, outdoorSpace: 15, naturalLight: 20, communityAppeal: 15, convenience: 20, schoolAccess: 15 },
+  },
+  {
+    label: "More room",
+    weights: { affordability: 20, commute: 15, space: 100, outdoorSpace: 55, naturalLight: 25, communityAppeal: 20, convenience: 15, schoolAccess: 15 },
+  },
+  {
+    label: "Easy everyday",
+    weights: { affordability: 25, commute: 90, space: 20, outdoorSpace: 15, naturalLight: 20, communityAppeal: 30, convenience: 100, schoolAccess: 25 },
+  },
+  {
+    label: "School access",
+    weights: { affordability: 25, commute: 30, space: 20, outdoorSpace: 20, naturalLight: 15, communityAppeal: 20, convenience: 35, schoolAccess: 100 },
+  },
+];
 
 const money = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -37,6 +68,7 @@ export default function Home() {
   const [refineError, setRefineError] = useState("");
   const [previousRanks, setPreviousRanks] = useState<Record<string, number>>({});
   const [weightStatus, setWeightStatus] = useState("");
+  const [draftWeights, setDraftWeights] = useState<PriorityWeights | null>(null);
 
   async function findHomes(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -52,6 +84,7 @@ export default function Home() {
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error ?? "Unable to rank homes.");
       setResult(payload);
+      setDraftWeights(payload.preferences.priorities);
       setPreviousRanks({});
       setWeightStatus("");
       setRefinement(refinementStarter);
@@ -85,6 +118,7 @@ export default function Home() {
         Object.fromEntries(result.matches.map((home, index) => [home.id, index + 1])),
       );
       setResult(payload);
+      setDraftWeights(payload.preferences.priorities);
       setWeightStatus("");
       setRefinement("");
     } catch (caught) {
@@ -104,26 +138,52 @@ export default function Home() {
   }
 
   function adjustPriority(key: PriorityKey, weight: number) {
-    if (!result || result.preferences.priorities[key] === weight) return;
+    if (!result) return;
+    const nextWeights = {
+      ...(draftWeights ?? result.preferences.priorities),
+      [key]: weight,
+    };
+    setDraftWeights(nextWeights);
+    setWeightStatus(
+      priorityKeys.some((priority) => nextWeights[priority] !== result.preferences.priorities[priority])
+        ? "Strategy changes are ready. Recalculate to update every score and rank."
+        : "These weights match the currently applied strategy.",
+    );
+  }
+
+  function applyPreset(label: string, weights: PriorityWeights) {
+    setDraftWeights(weights);
+    setWeightStatus(`${label} mix is ready. Recalculate to see which homes move.`);
+  }
+
+  function recalculateScores() {
+    if (!result || !draftWeights) return;
 
     const preferences = {
       ...result.preferences,
-      priorities: {
-        ...result.preferences.priorities,
-        [key]: weight,
-      },
+      priorities: draftWeights,
     };
 
-    setPreviousRanks(
-      Object.fromEntries(result.matches.map((home, index) => [home.id, index + 1])),
-    );
+    const previousIds = result.matches.map((home) => home.id);
+    const nextMatches = rankListings(listings, preferences);
+    const nextIds = nextMatches.map((home) => home.id);
+    const newcomers = nextIds.filter((id) => !previousIds.includes(id)).length;
+    const orderChanged = nextIds.some((id, index) => id !== previousIds[index]);
+
+    setPreviousRanks(Object.fromEntries(previousIds.map((id, index) => [id, index + 1])));
     setResult({
       ...result,
       preferences,
-      matches: rankListings(listings, preferences),
+      matches: nextMatches,
       changes: undefined,
     });
-    setWeightStatus(`${factorLabels[key]} weight is now ${weight}. The shortlist was reranked.`);
+    setWeightStatus(
+      newcomers > 0
+        ? `${newcomers} new ${newcomers === 1 ? "home entered" : "homes entered"} the top five.`
+        : orderChanged
+          ? "Scores changed and the same five homes moved into a new order."
+          : "Scores changed, but these five still lead because they remain strongest across the full mix.",
+    );
   }
 
   return (
@@ -131,23 +191,26 @@ export default function Home() {
       <section className="hero">
         <nav>
           <a className="brand" href="#top" aria-label="GPT Home Buying Agent home">
-            <span className="brand-mark">H</span>
+            <span className="brand-mark">HM</span>
             <span>HomeMatch</span>
           </a>
           <span className="build-week">OpenAI Build Week MVP</span>
         </nav>
 
         <div className="hero-copy" id="top">
-          <p className="eyebrow">A clearer path to the right front door</p>
-          <h1>Tell us what home feels like.</h1>
+          <div className="chapter-badge"><span>Interactive</span> A smarter way to compare homes</div>
+          <h1>Build your strategy for the right home.</h1>
           <p className="lede">
-            Your personal buying copilot turns everyday preferences into transparent rankings—so
-            every match comes with reasons, trade-offs, and math you can inspect.
+            Turn a life-changing decision into a clear, interactive plan. Build your ideal home
+            mix, compare the trade-offs, and tune every priority until the shortlist feels right.
           </p>
         </div>
 
         <form className="search-card" onSubmit={findHomes}>
-          <label htmlFor="request">Describe your ideal home</label>
+          <div className="search-card-heading">
+            <div><p>Build your home mix</p><label htmlFor="request">Describe your ideal home</label></div>
+            <span className="mix-badge">Start here</span>
+          </div>
           <textarea
             id="request"
             value={request}
@@ -156,9 +219,9 @@ export default function Home() {
             maxLength={1200}
           />
           <div className="form-footer">
-            <span>Try budget, ZIP, bedrooms, commute, light, community, or nearby conveniences.</span>
+            <span>Try budget, ZIP, commute, light, schools, community, or nearby conveniences.</span>
             <button disabled={loading} type="submit">
-              {loading ? "Ranking homes…" : "Find my matches"}
+              {loading ? "Scouting homes..." : "Reveal my shortlist"}
               <span aria-hidden="true">→</span>
             </button>
           </div>
@@ -170,8 +233,8 @@ export default function Home() {
         <section className="results" aria-live="polite">
           <div className="results-heading">
             <div>
-              <p className="eyebrow">Your personalized shortlist</p>
-              <h2>{result.matches.length ? `${result.matches.length} homes rise to the top` : "No exact matches yet"}</h2>
+              <p className="eyebrow">Your match board</p>
+              <h2>{result.matches.length ? `${result.matches.length} contenders cleared every hard rule` : "No contenders cleared the rules"}</h2>
             </div>
             <span className={`mode ${result.mode === "gpt-5.6" ? "live" : "demo"}`}>
               {result.mode === "gpt-5.6" ? "Interpreted by GPT-5.6" : "Local demo mode"}
@@ -182,10 +245,9 @@ export default function Home() {
 
           <section className="refinement-panel" aria-labelledby="refinement-title">
             <div className="refinement-copy">
-              <span className="loop-number">2</span>
               <div>
-                <p className="card-kicker">Refine without starting over</p>
-                <h3 id="refinement-title">What changed after seeing these homes?</h3>
+                <p className="card-kicker">Refine your strategy</p>
+                <h3 id="refinement-title">What did the first round teach you?</h3>
                 <p>
                   Your agent keeps the current profile, updates only what you say, and shows how
                   the ranking responds.
@@ -220,7 +282,7 @@ export default function Home() {
                   </button>
                 </div>
                 <button className="refine-submit" disabled={refining || refinement.trim().length < 4} type="submit">
-                  {refining ? "Updating..." : "Update my ranking"}
+                  {refining ? "Updating..." : "Update shortlist"}
                   <span aria-hidden="true">&rarr;</span>
                 </button>
               </div>
@@ -231,8 +293,8 @@ export default function Home() {
           {result.changes && (
             <div className="change-summary" role="status">
               <div>
-                <p className="card-kicker">Profile update</p>
-                <h3>{result.changes.length ? "Your agent changed only these preferences" : "No profile values changed"}</h3>
+                <p className="card-kicker">Strategy updated</p>
+                <h3>{result.changes.length ? "Only these stats changed" : "No strategy stats changed"}</h3>
               </div>
               {result.changes.length ? (
                 <div className="change-list">
@@ -251,8 +313,7 @@ export default function Home() {
 
           <div className="result-grid">
             <aside className="preference-card">
-              <p className="card-kicker">What we heard</p>
-              <h3>Your decision profile</h3>
+              <div className="strategy-title"><div><p className="card-kicker">Strategy deck</p><h3>Tune your stats</h3></div><span>{priorityKeys.length} stats</span></div>
               <dl className="constraints">
                 <div><dt>ZIP</dt><dd>{result.preferences.zipCode}</dd></div>
                 <div><dt>Budget</dt><dd>{money.format(result.preferences.maxPrice)}</dd></div>
@@ -262,23 +323,48 @@ export default function Home() {
               <div className="priority-list">
                 <div className="priority-heading">
                   <p>Priority weights</p>
-                  <small>Drag to rerank</small>
+                  <small>Adjust, then recalculate</small>
+                </div>
+                <div className="strategy-presets" aria-label="Quick strategy mixes">
+                  {strategyPresets.map((preset) => (
+                    <button
+                      className="preset-button"
+                      type="button"
+                      key={preset.label}
+                      onClick={() => applyPreset(preset.label, preset.weights)}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
                 </div>
                 {priorityKeys.map((key) => (
                   <label className="priority" key={key} htmlFor={`priority-${key}`}>
-                    <span>{factorLabels[key]}</span>
+                    <span className="stat-label"><i aria-hidden="true">{factorMarks[key]}</i>{factorLabels[key]}</span>
                     <input
                       id={`priority-${key}`}
                       type="range"
                       min="0"
                       max="100"
                       step="5"
-                      value={result.preferences.priorities[key]}
+                      value={(draftWeights ?? result.preferences.priorities)[key]}
                       onChange={(event) => adjustPriority(key, Number(event.target.value))}
                     />
-                    <output htmlFor={`priority-${key}`}>{result.preferences.priorities[key]}</output>
+                    <output htmlFor={`priority-${key}`}>{(draftWeights ?? result.preferences.priorities)[key]}</output>
                   </label>
                 ))}
+                <button
+                  className="recalculate-button"
+                  type="button"
+                  disabled={
+                    !draftWeights ||
+                    !priorityKeys.some(
+                      (key) => draftWeights[key] !== result.preferences.priorities[key],
+                    )
+                  }
+                  onClick={recalculateScores}
+                >
+                  Recalculate scores <span aria-hidden="true">↻</span>
+                </button>
                 <p className="weight-status" aria-live="polite">{weightStatus}</p>
               </div>
               {result.preferences.assumptions.length > 0 && (
@@ -287,24 +373,24 @@ export default function Home() {
                   <ul>{result.preferences.assumptions.map((item) => <li key={item}>{item}</li>)}</ul>
                 </div>
               )}
-              <small>Sample listings and estimates are for product demonstration only.</small>
+              <small>Listing facts were checked against the linked Zillow pages on July 20, 2026. Commute, monthly cost, and ranking-factor values are app estimates.</small>
             </aside>
 
             <div className="matches">
               <ShortlistMap matches={result.matches} />
               {result.matches.length === 0 ? (
                 <div className="empty-state">
-                  <h3>Your constraints filtered every sample home.</h3>
-                  <p>Raise the budget or extend the commute to see more sample homes in 20878.</p>
+                  <h3>Your constraints filtered every home in this snapshot.</h3>
+                  <p>Raise the budget or extend the commute to see more homes in this dated 20878 snapshot.</p>
                 </div>
               ) : result.matches.map((home, index) => {
                 const movement = movementFor(home.id, index + 1);
                 return (
                 <article className="home-card" key={home.id} id={`match-${home.id}`}>
                   <div className="rank-block">
-                    <span>#{index + 1}</span>
+                    <span>Rank #{index + 1}</span>
                     <strong>{home.score}</strong>
-                    <small>match</small>
+                    <small>fit pts</small>
                     {movement && <em className={`movement ${movement.tone}`}>{movement.label}</em>}
                   </div>
                   <div className="home-body">
@@ -314,10 +400,22 @@ export default function Home() {
                         <h3>{home.address}</h3>
                         <span>{home.city}, {home.state} {home.zipCode}</span>
                       </div>
-                      <strong className="price">{money.format(home.price)}</strong>
+                      <div className="home-actions">
+                        <strong className="price">{money.format(home.price)}</strong>
+                        <a
+                          className="zillow-link"
+                          href={home.zillowUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          title="Open the source listing on Zillow"
+                        >
+                          View on Zillow <span aria-hidden="true">↗</span>
+                        </a>
+                      </div>
                     </div>
                     <p className="description">{home.description}</p>
                     <div className="facts">
+                      <span className="listing-status"><strong>{home.listingStatus}</strong></span>
                       <span><strong>{home.bedrooms}</strong> beds</span>
                       <span><strong>{home.bathrooms}</strong> baths</span>
                       <span><strong>{home.squareFeet.toLocaleString()}</strong> sq ft</span>
@@ -325,11 +423,11 @@ export default function Home() {
                     </div>
                     <div className="reason-grid">
                       <div className="strength">
-                        <span>Why it fits</span>
+                        <span>Strong advantage</span>
                         <p>{home.strengths[0]}</p>
                       </div>
                       <div className="tradeoff">
-                        <span>Trade-off</span>
+                        <span>Watch-out</span>
                         <p>{home.compromises[0]}</p>
                       </div>
                     </div>
@@ -353,9 +451,9 @@ export default function Home() {
         </section>
       ) : (
         <section className="promise-strip">
-          <div><strong>01</strong><span>Describe what matters</span></div>
-          <div><strong>02</strong><span>See the ranking logic</span></div>
-          <div><strong>03</strong><span>Refine without starting over</span></div>
+          <div><strong aria-hidden="true">♥</strong><span><b>Share your taste</b><small>Describe what matters</small></span></div>
+          <div><strong aria-hidden="true">≋</strong><span><b>Compare clearly</b><small>See every score and trade-off</small></span></div>
+          <div><strong aria-hidden="true">↻</strong><span><b>Mix it your way</b><small>Tune priorities and watch homes move</small></span></div>
         </section>
       )}
     </main>

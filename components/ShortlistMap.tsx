@@ -33,8 +33,8 @@ export function ShortlistMap({ matches }: { matches: RankedListing[] }) {
     <section className="map-card" aria-labelledby="map-title">
       <div className="map-heading">
         <div>
-          <p className="card-kicker">Shortlist map</p>
-          <h3 id="map-title">See where the matches sit</h3>
+          <p className="card-kicker">Explore the board</p>
+          <h3 id="map-title">Scout your top contenders</h3>
         </div>
         <span>Approximate demo locations</span>
       </div>
@@ -67,7 +67,7 @@ export function ShortlistMap({ matches }: { matches: RankedListing[] }) {
         ))}
 
         <div className="map-selection" aria-live="polite">
-          <span>#{matches.findIndex((home) => home.id === selected.id) + 1} · {selected.score} match</span>
+          <span>Rank #{matches.findIndex((home) => home.id === selected.id) + 1} · {selected.score} fit pts</span>
           <strong>{selected.address}</strong>
           <small>{money.format(selected.price)} · {selected.bedrooms} beds</small>
         </div>

@@ -17,6 +17,7 @@ const PriorityWeightsSchema = z.object({
   naturalLight: z.number().int().min(0).max(100),
   communityAppeal: z.number().int().min(0).max(100),
   convenience: z.number().int().min(0).max(100),
+  schoolAccess: z.number().int().min(0).max(100),
 });
 
 const ExtractedPreferences = z.object({
@@ -58,6 +59,7 @@ const defaultPriorities: PriorityWeights = {
   naturalLight: 50,
   communityAppeal: 45,
   convenience: 45,
+  schoolAccess: 40,
 };
 
 function completePreferences(extracted: ExtractedPreferences): BuyerPreferences {
@@ -123,6 +125,7 @@ export function parsePreferencesLocally(request: string): BuyerPreferences {
       naturalLight: keywordWeight(request, [/natural light/i, /sunny/i, /bright/i, /window/i], 90, 40),
       communityAppeal: keywordWeight(request, [/pretty communit/i, /beautiful communit/i, /charming/i, /tree-lined/i, /attractive neighborhood/i], 85, 40),
       convenience: keywordWeight(request, [/convenient/i, /grocer/i, /restaurant/i, /shops?/i, /walkab/i], 85, 40),
+      schoolAccess: keywordWeight(request, [/school access/i, /near(?:by)? schools?/i, /close to schools?/i, /walk to school/i, /schools?/i], 85, 35),
     },
   });
 }
@@ -135,6 +138,7 @@ const preferenceLabels: Record<PriorityKey, string> = {
   naturalLight: "Natural-light priority",
   communityAppeal: "Community-appeal priority",
   convenience: "Groceries-and-restaurants priority",
+  schoolAccess: "School-access priority",
 };
 
 const priorityTopics: Record<PriorityKey, string> = {
@@ -145,6 +149,7 @@ const priorityTopics: Record<PriorityKey, string> = {
   naturalLight: "natural light|sunlight|sunny|bright|windows?",
   communityAppeal: "pretty community|beautiful community|community appeal|charming|tree-lined|attractive neighborhood",
   convenience: "convenience|convenient|groceries|grocery|restaurants?|shops?|walkability|walkable",
+  schoolAccess: "school access|nearby schools?|close to schools?|walk to school|schools?",
 };
 
 const lowerPriorityPhrase = "less important|matters? less|lower priority|care less|not as important";
@@ -320,7 +325,7 @@ export async function parsePreferences(request: string): Promise<{
         {
           role: "system",
           content:
-            "Extract explicitly stated home-buying constraints and relative priorities. Use null for missing scalar constraints. Assign 0-100 priority weights based only on the buyer's emphasis. Do not infer preferences involving protected characteristics or demographic proxies. Outdoor space is a hard requirement only when the buyer clearly says it is required or a must-have.",
+            "Extract explicitly stated home-buying constraints and relative priorities. Use null for missing scalar constraints. Assign 0-100 priority weights based only on the buyer's emphasis. Do not infer preferences involving protected characteristics or demographic proxies. Treat school-related language only as access or proximity; never infer or score school quality, rankings, test scores, student demographics, or protected-characteristic proxies. Outdoor space is a hard requirement only when the buyer clearly says it is required or a must-have.",
         },
         { role: "user", content: request },
       ],
@@ -369,7 +374,7 @@ export async function refinePreferences(
         {
           role: "system",
           content:
-            "Update a complete home-buying preference profile from one buyer follow-up. Copy every existing value exactly unless the follow-up explicitly changes it. Translate statements such as 'commute matters less' into a lower relative 0-100 weight while preserving unrelated weights. Change a hard constraint only when the buyer explicitly requires, relaxes, or replaces it. Never introduce protected characteristics or demographic proxies. Return only the complete revised profile through the provided schema.",
+            "Update a complete home-buying preference profile from one buyer follow-up. Copy every existing value exactly unless the follow-up explicitly changes it. Translate statements such as 'commute matters less' into a lower relative 0-100 weight while preserving unrelated weights. Change a hard constraint only when the buyer explicitly requires, relaxes, or replaces it. Treat school-related language only as access or proximity; never infer or score school quality, rankings, test scores, student demographics, protected characteristics, or demographic proxies. Return only the complete revised profile through the provided schema.",
         },
         {
           role: "user",

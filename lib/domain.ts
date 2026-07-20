@@ -6,6 +6,7 @@ export const priorityKeys = [
   "naturalLight",
   "communityAppeal",
   "convenience",
+  "schoolAccess",
 ] as const;
 
 export type PriorityKey = (typeof priorityKeys)[number];
@@ -40,7 +41,10 @@ export interface Listing {
   naturalLight: number;
   communityAppeal: number;
   convenience: number;
+  schoolAccess: number;
   style: string;
+  listingStatus: "For sale" | "Coming soon";
+  zillowUrl: string;
   description: string;
 }
 

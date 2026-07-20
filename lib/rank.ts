@@ -10,6 +10,7 @@ const labels = {
   naturalLight: "Natural light",
   communityAppeal: "Community appeal",
   convenience: "Groceries and restaurants",
+  schoolAccess: "School access",
 } as const;
 
 export function rankListings(
@@ -39,6 +40,7 @@ export function rankListings(
         naturalLight: Math.round(clamp(listing.naturalLight / 5) * 100),
         communityAppeal: Math.round(clamp(listing.communityAppeal / 5) * 100),
         convenience: Math.round(clamp(listing.convenience / 5) * 100),
+        schoolAccess: Math.round(clamp(listing.schoolAccess / 5) * 100),
       };
 
       const score = Math.round(

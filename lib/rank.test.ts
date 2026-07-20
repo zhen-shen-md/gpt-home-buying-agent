@@ -8,9 +8,19 @@ import {
 import { rankListings } from "@/lib/rank";
 
 describe("home matching vertical slice", () => {
+  it("keeps a direct Zillow source URL on every dated listing snapshot", () => {
+    expect(listings).toHaveLength(8);
+    expect(
+      listings.every((listing) => {
+        const source = new URL(listing.zillowUrl);
+        return source.hostname === "www.zillow.com" && source.pathname.includes("/homedetails/");
+      }),
+    ).toBe(true);
+  });
+
   it("extracts common constraints in demo mode", () => {
     const preferences = parsePreferencesLocally(
-      "I want a bright 3-bedroom in 20878 under $800k. Keep my commute to DC under 1 hour. Pretty community and convenient to groceries and restaurants.",
+      "I want a bright 3-bedroom in 20878 under $800k. Keep my commute to DC under 1 hour. Pretty community, convenient to groceries and restaurants, with easy access to schools.",
     );
 
     expect(preferences.zipCode).toBe("20878");
@@ -20,6 +30,7 @@ describe("home matching vertical slice", () => {
     expect(preferences.priorities.naturalLight).toBeGreaterThan(50);
     expect(preferences.priorities.communityAppeal).toBeGreaterThan(50);
     expect(preferences.priorities.convenience).toBeGreaterThan(50);
+    expect(preferences.priorities.schoolAccess).toBeGreaterThan(50);
     expect(preferences.assumptions.some((assumption) => assumption.startsWith("Minimum bedrooms"))).toBe(false);
   });
 
@@ -65,8 +76,27 @@ describe("home matching vertical slice", () => {
       priorities: { ...zeroWeights, space: 100 },
     });
 
-    expect(affordabilityFirst[0].id).toBe("quince-orchard");
-    expect(spaceFirst[0].id).toBe("orchard-ridge");
+    expect(affordabilityFirst[0].id).toBe("west-side-drive");
+    expect(spaceFirst[0].id).toBe("community-center-avenue");
+    expect(affordabilityFirst.map((home) => home.id)).not.toEqual(
+      spaceFirst.map((home) => home.id),
+    );
+  });
+
+  it("can make objective school access the deciding priority", () => {
+    const base = parsePreferencesLocally(
+      "I want a 3 bedroom in 20878 under $800k with a commute under 1 hour",
+    );
+    const zeroWeights = Object.fromEntries(
+      Object.keys(base.priorities).map((key) => [key, 0]),
+    ) as typeof base.priorities;
+    const matches = rankListings(listings, {
+      ...base,
+      priorities: { ...zeroWeights, schoolAccess: 100 },
+    });
+
+    expect(matches[0].id).toBe("big-acre-square");
+    expect(matches[0].scoreBreakdown.schoolAccess).toBe(100);
   });
 
   it("preserves unrelated constraints during a refinement", () => {

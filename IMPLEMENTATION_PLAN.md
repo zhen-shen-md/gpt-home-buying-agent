@@ -1,67 +1,54 @@
-# GPT Home Buying Agent — two-day implementation plan
+# GPT Home Buying Agent — two-day MVP implementation record
 
 ## Product promise
 
-A buyer describes an ideal home in ordinary language, sees how those preferences were interpreted, and receives a transparent ranked shortlist that changes when the request changes.
+A buyer describes an ideal home in ordinary language, reviews how the request was interpreted, and receives a transparent shortlist that can be reshaped without restarting the search.
 
-## Vertical slice built first
+## Smallest working vertical slice
 
 1. Accept one natural-language buyer request.
-2. Use GPT-5.6 Structured Outputs to extract a validated preference object.
-3. Fall back to a local parser when an API key is unavailable so the demo remains runnable.
-4. Apply hard constraints and deterministic weighted scoring to curated listings.
-5. Render the interpreted preferences and top five matches with strengths, compromises, and score breakdowns.
-6. Preserve the profile across a follow-up, audit explicit changes, and show ranking movement.
+2. Use GPT-5.6 Structured Outputs to extract a validated preference profile.
+3. Fall back to a clearly labeled local parser when the API is unavailable.
+4. Apply hard constraints before deterministic weighted scoring.
+5. Show up to five ranked homes with strengths, compromises, monthly-cost estimates, source links, and complete score breakdowns.
+6. Preserve the profile across a follow-up, audit explicit changes, and show rank movement.
 
-This slice proves the core product loop without MLS access, authentication, saved searches, maps, or autonomous external actions.
+## Day 1 — trustworthy ranking loop
 
-## Day 1 — complete the trustworthy ranking loop
+- [x] Define listing, preference, and ranked-match TypeScript contracts.
+- [x] Build and test deterministic hard filtering and weighted scoring.
+- [x] Integrate GPT-5.6 preference extraction through the Responses API.
+- [x] Add a credential-free local fallback for demo resilience.
+- [x] Render an inspectable preference profile and top-five ranking.
+- [x] Seed a dated snapshot of eight real 20878 properties with direct Zillow source links.
 
-- Define listing, preference, and ranked-match contracts.
-- Seed realistic listings for two ZIP codes.
-- Implement and test deterministic filtering and scoring.
-- Integrate GPT-5.6 preference extraction through the Responses API.
-- Build the single-page request and ranked-result experience.
-- Add explicit labels for AI-extracted values and local-demo fallback behavior.
+Exit condition achieved: a fresh request produces a visible, reproducible ranking whose inputs and math can be inspected.
 
-Exit condition: a fresh request produces a visible, reproducible top-five ranking.
+## Day 2 — refinement, interaction, and submission readiness
 
-## Day 2 — harden and prepare the submission
+- [x] Add conversational refinement while preserving unrelated preferences.
+- [x] Display a before/after preference audit and rank-movement labels.
+- [x] Add adjustable weights, an explicit recalculation action, and four strategy presets.
+- [x] Add school access as an objective proximity/convenience factor with explicit fair-housing guardrails.
+- [x] Add a synchronized schematic map for the five visible matches.
+- [x] Add real Zillow detail links and visibly separate sourced facts from app estimates.
+- [x] Redesign the interface as playful HomeMatch strategy tuning without numbered quest framing.
+- [x] Deploy to Vercel and prepare the README, judge guide, screenshots, license, and Devpost copy.
 
-- Add conversational refinement while preserving the prior preference state. **Completed.**
-- Add selection and side-by-side comparison for up to three homes.
-- Improve empty, loading, API-error, and impossible-constraint states.
-- Add representative preference-extraction fixtures and ranking tests.
-- Deploy, test from a clean browser, and prepare the README/demo script.
-- Record where Codex and GPT-5.6 affected implementation decisions.
+Exit condition achieved: a judge can complete the core flow in under two minutes and understand why each result moved.
 
-Exit condition: a judge can run or open the app, complete the primary flow in under two minutes, and understand why every result ranked where it did.
+## Intentionally deferred
 
-## Must-have after this slice
-
-- Up-to-three-home comparison.
-- A larger curated dataset with clear provenance.
-- Deployment and submission-ready documentation.
-
-## Completed high-impact increment
-
-- Added a dedicated `/api/refine` route with a full preference-snapshot contract.
-- Added GPT-5.6 Structured Output refinement with a deterministic local fallback.
-- Preserved unrelated constraints and removed resolved assumptions.
-- Added deterministic before/after change detection and visible ranking movement.
-- Added tests for profile preservation, hard-constraint refinement, and reranking.
-
-## Stretch goals
-
-- Live property-data and commute APIs.
-- Persistent buyer profiles and saved shortlists.
-- New-listing and price-change alerts.
-- Map view, image analysis, disclosures, showing questions, and mortgage scenarios.
-- Human-approved outreach to a licensed real-estate professional.
+- Side-by-side comparison and saved shortlists.
+- A licensed live MLS or brokerage feed.
+- Live routing, geocoding, mortgage scenarios, and listing photography.
+- Persistent accounts, alerts, and buyer profiles.
+- Showing coordination or human-approved agent outreach.
 
 ## Guardrails
 
 - Never rank or recommend using protected characteristics or demographic proxies.
-- Treat affordability estimates as planning aids, not lending advice.
-- Keep ranking math deterministic and inspectable; use the model for language understanding, not hidden scoring.
+- Treat school-related language only as access or proximity—not quality, rankings, test scores, or student demographics.
+- Treat affordability and commute values as planning estimates, not lending or routing advice.
+- Keep filtering and ranking deterministic and inspectable; use GPT-5.6 for language understanding, not hidden scoring.
 - Do not contact agents, schedule showings, or create offers without explicit user approval.
