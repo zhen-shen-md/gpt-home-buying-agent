@@ -8,7 +8,7 @@
 | Devpost project | [devpost.com/software/gpt-home-buying-agent](https://devpost.com/software/gpt-home-buying-agent) | Draft |
 | Source repository | [github.com/zhen-shen-md/gpt-home-buying-agent](https://github.com/zhen-shen-md/gpt-home-buying-agent) | Verified public |
 | License | [MIT](./LICENSE) | Ready |
-| Demo video | **TODO: add the public YouTube URL** | Required before submission |
+| Demo video | [youtu.be/qkGeUL-Hd1o](https://youtu.be/qkGeUL-Hd1o) | Verified public, 2:59 |
 | Codex `/feedback` Session ID | `019f7bdd-a64f-7532-a7cd-06e61ce36d46` | Ready |
 
 The production deployment was verified on July 20, 2026. Its `/api/match` endpoint returned `mode: gpt-5.6`, five matches, and no fallback warning.
@@ -64,7 +64,7 @@ No account or login is required.
 - [x] Testing instructions
 - [x] MIT license
 - [x] Public or judge-accessible source repository URL
-- [ ] Public YouTube demo video under three minutes with audio
+- [x] Public YouTube demo video under three minutes with audio
 - [x] Codex `/feedback` Session ID
 - [x] Replace the Devpost description's unimplemented side-by-side-comparison claim
 - [ ] Register for and submit the project to OpenAI Build Week

@@ -27,6 +27,7 @@ The app uses a July 20, 2026 snapshot of eight real properties with direct Zillo
 ## Links
 
 - Live demo: https://gpt-home-buying-agent.vercel.app
+- Demo video: https://youtu.be/qkGeUL-Hd1o
 - Repository: https://github.com/zhen-shen-md/gpt-home-buying-agent
 - License: MIT
 - Codex `/feedback` Session ID: `019f7bdd-a64f-7532-a7cd-06e61ce36d46`
